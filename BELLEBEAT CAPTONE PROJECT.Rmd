@@ -1,0 +1,258 @@
+---
+title: "BELLEBEAT CAPTONE PROJECT"
+author: "Kolawole Olaitan Adeola"
+date: "2024-07-15"
+output: html_document
+---
+##1.0 INTRODUCTION
+
+ABOUT THE COMPANY
+
+Urška Sršen and Sando Mur founded Bellabeat, a high-tech company that manufactures health-focused smart products.
+Sršen used her background as an artist to develop beautifully designed technology that informs and inspires women around the world. Collecting data on activity, sleep, stress, and reproductive health has allowed Bellabeat to empower women with
+knowledge about their own health and habits. Since it was founded in 2013, Bellabeat has grown rapidly and quickly positioned itself as a tech-driven wellness company for women.
+
+By 2016, Bellabeat had opened offices around the world and launched multiple products. Bellabeat products became available through a growing number of online retailers in addition to their own e-commerce channel on their website. The company has invested in traditional advertising media, such as radio, out-of-home billboards, print, and television, but focuses on digital marketing extensively. Bellabeat invests year-round in Google Search, maintaining active Facebook and Instagram pages, and consistently engages consumers on Twitter. Additionally, Bellabeat runs video ads on Youtube and display ads on the Google Display Network to support campaigns around key marketing dates.
+
+## BUSINESS TASK
+
+Sršen asks to analyze smart device usage data in order to gain insight into how consumers use non-Bellabeat smart devices.
+
+## BUSINESS QUESTIONS:
+*1. What are some trends in smart device usage?
+*2. How could these trends apply to Bellabeat customers?
+*3. How could these trends help influence Bellabeat marketing strategy?
+
+##2.0 PREPARATION 
+
+Sršen encourages you to use public data that explores smart device users’ daily habits. She points you to a specific data set:
+● FitBit Fitness Tracker Data (CC0: Public Domain, dataset made available through Mobius): This Kaggle data set contains personal fitness tracker from thirty fitbit users. Thirty eligible Fitbit users consented to the submission of
+personal tracker data, including minute-level output for physical activity, heart rate, and sleep monitoring. It includes information about daily activity, steps, and heart rate that can be used to explore users’ habits.
+The public data contains over 10 files of users and rows containing observation of each day of each users.
+The dataset is limited to only 33 users which is condisered standard for analysis,in other words the dataset ROCCC.
+Using this dataset,we will be able to determine users pattern and provide marketing strategy ideas to bellebeat company
+
+
+## PREPARATION OF R ENVIRONMENT FOR THE PROJECT
+
+Loading 'tidyverse','ggplot2',and other package needed for data exploration and analysis
+```{r loadng packages}
+library(tidyverse)
+library(ggplot2)
+```
+
+## LOADING DATASET FOR THE PROJECT
+For this project we will be considering the 'daily activity' and 'sleep day' dataset
+
+```{r loading dataset}
+daily_activity <- read.csv("dailyActivity_merged.csv")
+sleep_day <- read_csv("sleepDay_merged.csv")
+
+```
+
+##3.0 DATA EXPLORATON AND CLEANING
+
+Getting familiar with the dataset
+```{r view the dataset}
+head(daily_activity)
+head(sleep_day)
+```
+```{r}
+colnames(daily_activity)
+colnames(sleep_day)
+```
+
+## The daily_activity has 15 columns while the sleep_day as has 5 columns
+## They also have a column 'id' as similarities
+## The naming convention have some uppercase, we will have to do name clean
+
+```{r formatting columns for consistency and reliability}
+daily_activity <- rename_with(daily_activity,tolower)
+sleep_day <- rename_with(sleep_day,tolower)
+```
+
+
+## view the new variable to clean naming convention
+
+```{r}
+head(daily_activity)
+head(sleep_day)
+```
+
+
+##3.1 Checking out for duplicate in the data frame
+
+```{r}
+sum(duplicated(daily_activity))
+sum(duplicated(sleep_day))
+```
+The sleep day data frame as 3 duplicate observations,lets clean it
+
+```{r removing the duplicates}
+sleep_day <- sleep_day[!duplicated(sleep_day),]
+sum(duplicated(sleep_day))
+```
+
+##3.2 Checking for unique participant in each data frame
+
+```{r}
+n_distinct(daily_activity$id)
+n_distinct(sleep_day$id)
+```
+
+## daily activity as 33 participant while sleep day has 24 participant 
+## Let check for how many observation is in each data frame
+
+```{r}
+nrow(daily_activity)
+nrow(sleep_day)
+```
+## The daily activity contains 940 observations and the sleepday contains 410 observation
+
+## 4.0 DATA ANALYSIS
+
+## Making some calculations to determine trends in the data frames to make data informed decisions
+
+```{r data calculatons for daily activity}
+daily_activity_calc <- daily_activity %>%
+  group_by(id) %>%
+  summarise(avg_step = mean(totalsteps),
+            avg_calories = mean(calories),
+            avg_sedentary_min = mean(sedentaryminutes),
+            avg_fairly_active_min = mean(fairlyactiveminutes),
+            avg_lightly_active_min = mean(lightlyactiveminutes),
+            avg_very_active_min = mean(veryactiveminutes))
+head(daily_activity_calc)
+n_distinct(daily_activity_calc)
+summary(daily_activity_calc)
+```
+```{r data calculation for sleep day}
+sleep_day_calc <- sleep_day %>%
+  group_by(id)%>%
+  summarise(avg_min_asleep = mean(totalminutesasleep),
+            avg_min_in_bed = mean(totaltimeinbed))
+
+head(sleep_day_calc)
+n_distinct(sleep_day_calc)
+summary(sleep_day_calc)
+```
+
+##4.2 According to World Health Organization the standard recommended daily steps is 8000 steps
+
+## lets confirm the percentage pf participant that meet the recommended daily steps
+
+```{r recommended daily step calculation}
+data_by_recommeded_step <- daily_activity_calc %>%
+  mutate('user_type' = case_when(avg_step >= 8000 ~ "YES",
+                                 avg_step < 8000 ~ "NO"))
+
+head(data_by_recommeded_step)
+```
+
+
+##4.3 Categorizing the activity minutes to very active,moderately active,and sedentary active based on American Health Association
+
+### * Recommended time for moderate is 150min/week = 21.42min/day
+### * Recommend time for rigorous is 75min/week = 10.71/day
+
+```{r Recommended activity per user type}
+data_by_recommended_activity <- daily_activity_calc %>%
+  mutate(user_type = case_when( avg_very_active_min >= 10.71 ~ "VERY ACTIVE",
+                                avg_fairly_active_min >= 21.42 ~ "MODERATELY ACTIVE",
+                                avg_lightly_active_min < 10.71 ~ "SEDENTARY",
+                                avg_sedentary_min < 21.42 ~ "SEDENTARY"))
+
+head(data_by_recommended_activity)
+```
+
+
+##4.4 Merging daily activity data abd sleep day data to comfirm possible correlation or causation with the data frame
+
+```{r merging data frame daily activity calc and sleep day calc}
+merged_activity_sleep <- merge(daily_activity_calc,sleep_day_calc,by="id")
+
+head(merged_activity_sleep)
+n_distinct(merged_activity_sleep)
+```
+### The merged data contains of 24 variables to determine the relationship
+
+##5.0 DATA VISUALIZATION
+
+PLOTTING OUT THE TRENDS IN THE DAILY ACTIVITY AND THE SLEEP DAY DATA FRAME FOR SHARING INSIGHT WITH STAKEHOLDERS
+
+##5.1 Data visualization of steps and calories
+
+```{r relationship between average steps and calories burn}
+ggplot(data = daily_activity_calc) +
+  geom_point(mapping = aes(x = avg_step,y = avg_calories,color ="green"))+
+  geom_smooth(mapping = aes(x = avg_step,y = avg_calories ,color ="red"))+
+  labs(tile ="AVERAGE STEPS VS AVERAGE CALORIES",x = "STEPS",y = "CALORIES")
+```
+
+### This show a positive correlation the more steps the more calories burnt,the data is small make it difficult to get a causation
+
+##5.2 Plotting relationship between activity minute and calories
+
+```{r }
+ggplot(data = daily_activity_calc)+
+  geom_point(mapping = aes(x =avg_very_active_min,y =avg_calories,color="green"))+
+  geom_smooth(mapping = aes(x =avg_very_active_min,y=avg_calories,color="red"))+
+  labs(title ="AVERAGE VERY ACTIVE MINUTE VS  AVERAGE CALORIES", x ="VERY ACTIVE MINUTE",y ="CALORIES")
+```
+
+
+###This shows that the more active the users are the more calories burn
+
+##5.3 Plotting relationship between sedentary minute and calories
+
+```{r }
+ggplot(data=daily_activity_calc)+
+  geom_point(mapping = aes(x=avg_sedentary_min,y=avg_calories,color="green"))+
+  geom_smooth(mapping = aes(x=avg_sedentary_min,y=avg_calories,color="red"))+
+  labs(title="AVERAGE SEDENTARY MINUTE VS AVERAGE CALORIES",x="SEDENTARY MINUTE",y="CALORIES")
+```
+
+###This shows that less activity minute results to less calories burn
+
+##5.4 Plotting relationship between sleep and steps
+
+```{r plotting relationship between sleep and step taken}
+ggplot(merged_activity_sleep)+
+  geom_point(mapping=aes(x=avg_min_asleep,y=avg_step,color="green"))+
+  geom_smooth(mapping=aes(x=avg_min_asleep,,y=avg_step,color="red"))+
+  labs(title="AVERAGE MINUTE ASLEEP VS AVERAGE STEP",x ="MINUTE ASLEEP",y="STEPS")
+```
+
+
+### There is a positive relationship,user sleep have an effect their activity(step taken).
+
+
+##5.5 According to the recommended step by world health organization,plotting a chart to see number of users that meet up with the recommended daily step target
+```{r plot for recommended daily steps}
+ggplot(data_by_recommeded_step)+
+  geom_bar(mapping = aes(x=user_type,fill=user_type))+
+  labs(title = "NUMBER OF USER MEET RECOMMENDED DAILY STEP",x="rec_step_reach")
+```
+
+### This shows that 19 users did not meet up with the daily recommended steps and only 14 users meet up with the recommended steps
+
+##5.6 According to the american health association,plotting a chart to see the number of users that meet up with with the recommended activity minutes
+
+```{r plotting recommended activity minutes}
+ggplot(data_by_recommended_activity)+
+  geom_bar(mapping = aes(x=user_type,fill=user_type))+
+  labs(title = "NUMBER OF USERS THAT MEET RECOMMENDED ACTIVITY MINUTE",x= "rec_activity_min")
+```
+
+
+###The plot shows that above 15 are active active, less than 5 users are moderately active and more than 10 users those not meet any of the two recommended minute which make them sedentary
+## Note: The NA means those that does not meet the recommended activity minute
+
+##6.0 CONCLUSIONS AND RECOMMENDATION
+
+*1. Based on the positive corelation between step taken and calories burn, i recommend bellebeat to make the smart watch notification to inform users daily steps to achieve their health goals
+
+*2. Based on the insight into data showing the sleep having impact in the daily activity of user,bellebeat should incorporate sleep alert to help user reached their recommended sleep period and help with their daily activity
+
+*3. Based on activity minutes of users,bellebeat can implement inbuilt pop up activity and stating the number of calories burn for each activity to help and motivate users to want to do them and help them reach their desire weight or maintain their weight and get fit.
+
